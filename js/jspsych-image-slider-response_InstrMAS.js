@@ -143,12 +143,23 @@ jsPsych.plugins['image-slider-response_InstrMAS'] = (function() {
    }
 
     html += '<div id="jspsych-image-slider-response-wrapper" style="margin: 35px 0px;">';
-    html += '<div><div id="concept-list" style="width: 20%; float:left; padding-left:20%"><p style="font-size: 200%"><br><br>'+trial.concepts[0]+'</p><p style="font-size: 200%">'+
-    trial.concepts[1]+'</p><p style="font-size: 200%">'+
-    trial.concepts[2]+'</p><p style="font-size: 200%">'+
-    trial.concepts[3]+'</p><p style="font-size: 200%">'+
+    html+= '<div>'
+
+     if (trial.prompt2 !== null){
+        html += '<div style="text-align: left;font-size: 100%;width: 40%;position: absolute; line-height:30px;">'+trial.prompt2+'</div>'
+    }
+
+
+
+
+
+    html += '<div><div id="concept-list" style="width: 200px;margin-top: 25px;padding-left:0%;position: absolute;left: 58%;font-size:120%;border-style: solid;border-width: 2px;line-height: 15px;"><p><u>List of concepts</u></p>\
+    <p>'+trial.concepts[0]+'</p><p>'+
+    trial.concepts[1]+'</p><p>'+
+    trial.concepts[2]+'</p><p>'+
+    trial.concepts[3]+'</p><p>'+
     trial.concepts[4]+'</p>'+'</div>';
-    html += '<div id="jspsych-image-slider-response-stimulus" style="width: 80%;">';
+    html += '<div id="jspsych-image-slider-response-stimulus" style="width: 20%;padding-left: 75%;">';
     html += '<img src="'+trial.stimulus+'" style="';
    
     if(trial.stimulus_height !== null){
@@ -167,6 +178,8 @@ jsPsych.plugins['image-slider-response_InstrMAS'] = (function() {
     html += '</div></div>';
     //html += '<p><p><p><p><p><p><p>';
     //html += '<br></br>';
+    html+="</div>"
+
 
     html += '<div>' 
     html += '<div>'
@@ -176,12 +189,12 @@ jsPsych.plugins['image-slider-response_InstrMAS'] = (function() {
       html += 'width:'+trial.slider_width+'px;';
     }
     html += '">';
+   
+    
+    html += '<input type="range" value="'+trial.start+'" min="'+trial.min+'" max="'+trial.max+'" step="'+trial.step+'" style="width: 100%;" id="jspsych-image-slider-response-response"; class = "jspsych-image-slider-response-sliderColor"; ></input>';
     html += '<hr class="verticalC" />' ;
     html += '<hr class="verticalL" />' ;
     html += '<hr class="verticalR" />' ;
-    
-    html += '<input type="range" value="'+trial.start+'" min="'+trial.min+'" max="'+trial.max+'" step="'+trial.step+'" style="width: 100%;" id="jspsych-image-slider-response-response"; class = "jspsych-image-slider-response-sliderColor"; ></input>';
-    
     //Add labels
     html += '<div>'
     for(var j=0; j < trial.labels.length; j++){
@@ -199,10 +212,7 @@ jsPsych.plugins['image-slider-response_InstrMAS'] = (function() {
     html += '</div>';
 
     //Text prompt2
-       if (trial.prompt2 !== null){
-        html += '<span style="text-align: center; font-size: 100%;">'+trial.prompt2+'</span>'
-    }
-
+      
 
     // add submit button 
     html += '<button id="jspsych-image-slider-response-next" class="jspsych-btn" '+ (trial.require_movement ? "disabled" : "") + '>'+trial.button_label+'</button>';
