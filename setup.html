@@ -464,7 +464,7 @@ for(i=0;i<exemplars.length;i++){
             name: 'colorBlind'},
 
             {prompt: "What device did you use to complete this experiment?",
-            options: ["Computer", "Tablet", "Phone", "Pther"],
+            options: ["Computer", "Tablet", "Phone", "Other"],
             horizontal: false,
             required: true, 
             name: 'device'}
@@ -511,7 +511,7 @@ function finalSave (){
                 "<p>The goal of this experiment is to investigate what factors influence peoples associations between colors and concepts. In the experiment, you rated how much you associated colors with different concepts." +
                 "<p>Participants were randomly assigned a subset of concepts out of a list of concepts we are interested in. For example, you may have rated associations for colors with fruits or directions, whereas other participants provided ratings for colors with sceneries or emotions." +
                 
-                "<p>Thank you for participating!Press 'Escape' to exit fullscreen."+
+                "<p>Thank you for participating! Press 'Escape' to exit fullscreen."+
                 "<br>Please copy and paste the following code on your mTurk HIT: <br><b>"+subject_id+"</b></p>"+
                "<p>This page will remain open until you close this tab.</p>";},
             choices: jsPsych.NO_KEYS} //Prevents any input reponse from moving beyond the screen
