@@ -146,7 +146,7 @@ jsPsych.plugins['image-slider-response_InstrMAS'] = (function() {
     html+= '<div>'
 
      if (trial.prompt2 !== null){
-        html += '<div style="text-align: left;font-size: 100%;width: 40%;position: absolute; line-height:30px;">'+trial.prompt2+'</div>'
+        html += '<div style="text-align: left;font-size: 100%;width: 45%;position: absolute; line-height:30px;">'+trial.prompt2+'</div>'
     }
 
 
@@ -182,7 +182,7 @@ jsPsych.plugins['image-slider-response_InstrMAS'] = (function() {
 
 
     html += '<div>' 
-    html += '<div>'
+    html += '<div><br>'
    
     html += '<div class="jspsych-image-slider-response-container" style="position:relative; margin: 0 auto 3em auto; '; // add color to this object? 
     if(trial.slider_width !== null){
