@@ -146,20 +146,20 @@ jsPsych.plugins['image-slider-response_InstrMAS'] = (function() {
     html+= '<div>'
 
      if (trial.prompt2 !== null){
-        html += '<div style="text-align: left;font-size: 100%;width: 45%;position: absolute; line-height:30px;">'+trial.prompt2+'</div>'
+        html += '<div style="text-align: left;font-size: 100%;width: 700px;margin: 0 0 0 0;position: relative;line-height:30px;float: left;">'+trial.prompt2+'</div>'
     }
 
 
 
 
 
-    html += '<div><div id="concept-list" style="width: 200px;margin-top: 25px;padding-left:0%;position: absolute;left: 58%;font-size:120%;border-style: solid;border-width: 2px;line-height: 15px;"><p><u>List of concepts</u></p>\
+    html += '<div><div id="concept-list" style="width: 200px;margin-top: 25px;margin-left: 25px;position: relative;font-size:120%;border-style: solid;border-width: 2px;line-height: 15px;float: left;"><p><u>List of concepts</u></p>\
     <p>'+trial.concepts[0]+'</p><p>'+
     trial.concepts[1]+'</p><p>'+
     trial.concepts[2]+'</p><p>'+
     trial.concepts[3]+'</p><p>'+
     trial.concepts[4]+'</p>'+'</div>';
-    html += '<div id="jspsych-image-slider-response-stimulus" style="width: 20%;padding-left: 75%;">';
+    html += '<div id="jspsych-image-slider-response-stimulus" style="width: 300px;float: left;">';
     html += '<img src="'+trial.stimulus+'" style="';
    
     if(trial.stimulus_height !== null){
@@ -192,9 +192,9 @@ jsPsych.plugins['image-slider-response_InstrMAS'] = (function() {
    
     
     html += '<input type="range" value="'+trial.start+'" min="'+trial.min+'" max="'+trial.max+'" step="'+trial.step+'" style="width: 100%;" id="jspsych-image-slider-response-response"; class = "jspsych-image-slider-response-sliderColor"; ></input>';
-    html += '<hr class="verticalC" />' ;
-    html += '<hr class="verticalL" />' ;
-    html += '<hr class="verticalR" />' ;
+    html += '<hr class="verticalC" style="bottom:-14px;top:auto;" />' ;
+    html += '<hr class="verticalL" style="bottom:-14px;top:auto;"/>' ;
+    html += '<hr class="verticalR" style="bottom:-14px;top:auto;" />' ;
     //Add labels
     html += '<div>'
     for(var j=0; j < trial.labels.length; j++){
