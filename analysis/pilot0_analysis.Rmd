@@ -761,11 +761,11 @@ if(!exists('color_dict_df')){
 }
 
 ### Generate PCA object from conceptx color ratings matrix
-pca2<-ratings_mat%>%prcomp(scale=F,center=F, retx = T)
+pca_obj<-ratings_mat[,-1]%>%prcomp(scale=F,center=F, retx = T)
 
 
 ### Function for reconstructing the matrix using fewer components
-reverse_pca <- function(n_comp = 2, pca_object = pca2){
+reverse_pca <- function(n_comp = 2, pca_object = pca_obj){
   
   ## Multiply the matrix of rotated data by the transpose of the matrix 
   ## of eigenvalues (i.e. the component loadings) to get back to a 
@@ -803,9 +803,497 @@ reverse_pca <- function(n_comp = 2, pca_object = pca2){
   return(recon_df)
 }
 
+for(i in 2:30){
+m<-reverse_pca(n_comp =i )
+#write.csv(m, paste0('ratings_matrix_',i,'PC.csv'))
+}
+
+## Example
 m<-reverse_pca(n_comp = 11)
 
-##write.csv(m, 'ratings_matrix_11PC.csv')
+#write.csv(m, 'ratings_matrix_11PC.csv')
+
+```
+
+
+####
+
+```{r}
+cc_assoc<-as.matrix(ratings_mat[,-1])
+rownames(cc_assoc)<- ratings_mat[,1]
+dmat<-dist(cc_assoc, upper=T, diag = T)
+
+cc_assoc
+
+clust_obj<- hclust(dmat)
+
+
+plot(clust_obj, hang = 0.1, check = TRUE,
+     axes = TRUE, frame.plot = FALSE, ann = TRUE,
+     main = "Concept Dendogram",
+     sub = NULL, xlab = NULL, ylab = "Height")
+```
+```{r}
+library(factoextra)
+dmat<- as.matrix(dmat)
+dmat['dress','pants']
+
+kmeans_obj <- kmeans(cc_assoc, centers = 6,nstart = 30)
+
+print(kmeans_obj)
+
+a<-fviz_cluster(kmeans_obj, cc_assoc) 
+a<- a+ theme_classic()
+a
+```
+
+```{r}
+kmeans_obj
+```
+
+
+
+```{r}
+library(gtools)
+
+concept_list<-ratings_mat[,1]
+
+concept_list<- as.character(concept_list)
+
+concept_list
+
+cluster1<-c('blueberry','beach','ocean','sky')
+
+c1_mat<- ratings_mat[ratings_mat[,1]%in%cluster1,2:59]
+rownames(c1_mat)<- cluster1
+c1_dmat<-dist( c1_mat,diag = T, upper = T)
+c1_dmat
+```
+
+```{r}
+set2<-c('dress','shirt','day','noon','happy','above','dawn','beside')
+set3<-c('sunset','mango','watermelon','strawberry','field','lemon')
+set4<-c('fearful','angry','disgust','night','sad','far','below','dusk','pants','socks','shoes')
+```
+
+
+
+```{r}
+
+find_best_clust<-function(set){
+all_clusters<-combinations(length(set), 4, v=set, set=TRUE, repeats.allowed=FALSE)
+min_norm<-c()
+for(i in 1:nrow(all_clusters)){
+  this_cluster<- all_clusters[i,]
+  c_mat<- ratings_mat[ratings_mat[,1]%in%this_cluster,2:59]
+  rownames(c_mat)<- this_cluster
+  c_dmat<-dist(c_mat,diag = T, upper = T)
+  mat_diff<- as.matrix(c1_dmat-c_dmat)
+  mat_norm<- norm(mat_diff, type = 'F')
+  if(length(min_norm)==0){
+    min_norm = mat_norm
+    best_cluster = this_cluster
+  } else if(mat_norm<min_norm) {
+    min_norm = mat_norm
+    best_cluster = this_cluster
+  }
+
+}
+  return(best_cluster)
+}
+
+
+cluster2<-find_best_clust(set2)
+cluster3<-find_best_clust(set3)
+cluster4<-find_best_clust(set4)
+
+```
+
+
+```{r}
+
+##assign between conditions
+
+names(cluster1)<- sample(4,4)
+
+names(cluster2)<- sample(4,4)
+
+names(cluster3)<-sample(4,4)
+
+names(cluster4)<-sample(4,4)
+
+rbind(cluster1, cluster2[names(cluster1)], cluster3[names(cluster1)], cluster4[names(cluster1)])
+
+
+```
+
+```{r}
+
+bcluster3 = c('ocean', 'happy', 'watermelon', 'disgust')
+
+for(i in 2:30){
+  
+m<- read.csv(paste0('ratings_matrix_',i,'PC.csv'))
+m_sub<-m[m[,1]%in%bcluster3,]
+
+colnames(m_sub)<-c('concept','index',seq(1,58))
+for(j in 1:4){
+j=2
+m_ratings<-m_sub[j,]%>%select(as.character(seq(1,58)))
+
+
+m_ratings_sorted<-sort(m_ratings, decreasing = T)
+m_ratings_sorted<- as.vector(m_ratings_sorted)
+
+hp_df<- data.frame(index = names(m_ratings_sorted), rating = t(m_ratings_sorted) )
+colnames(hp_df)<- c('index','rating')
+color_dict_t<- tibble(hex = as.character(color_dict_df$hex), index = as.character(color_dict_df$index))
+hp_df$index <- factor(hp_df$index, levels = color_dict_t$index)
+
+
+p<-ggplot(hp_df, aes(x=reorder(index, -rating), y=rating, fill= index ))+geom_col()+ scale_fill_manual(values= color_dict_t$hex)+theme_classic()+ theme(panel.background = element_rect(fill = "grey",colour = "grey"), legend.position ="none", axis.ticks.x=element_blank(), axis.text.x = element_blank()) + labs(x="", y="ratings")+ lims(y=c(0,1))+ ggtitle(paste0(m_sub$concept[j],"_",i,"_PCS"))
+
+p
+
+ggsave(filename = paste0("hp_",(paste0(m_sub$concept[j],"_",i,"_PCS.png"))), plot= last_plot(), width= 20, height = 10, dpi=300, device = 'png')
+print(p)
+
+
+}
+}
+
+
+```
+
+```{r}
+hp_df
+color_dict_t
+```
+
+```{r}
+sum(ratings_mat[,:59]  - m[,3:60])
+
+m_sub<-ratings_mat[ratings_mat[,1]%in%bcluster3,]
+m_sub
+colnames(m_sub) <- c('concept', seq(1,58))
+m_sub
+
+
+
+m_ratings<-m_sub[2,]%>%select(as.character(seq(1,58)))
+
+
+#m_ratings_sorted<-sort(m_ratings, decreasing = T)
+#m_ratings_sorted<- as.vector(m_ratings_sorted)
+
+hp_df<- data.frame(index = names(m_ratings), rating = t(m_ratings) )
+
+colnames(hp_df)<- c('index','rating')
+color_dict_t<- tibble(hex = as.character(color_dict_df$hex), index = as.character(color_dict_df$index))
+hp_df$index <- factor(hp_df$index, levels = color_dict_t$index)
+
+
+p<-ggplot(hp_df, aes(x=reorder(index, -rating), y=rating, fill= index ))+geom_col()+ scale_fill_manual(values= color_dict_t$hex)+theme_classic()+ theme(panel.background = element_rect(fill = "grey",colour = "grey"), legend.position ="none", axis.ticks.x=element_blank(), axis.text.x = element_blank()) + labs(x="", y="ratings")+ lims(y=c(0,1))+ ggtitle(paste0(m_sub$concept[2],"_raw"))
+
+p
+```
+```{r}
+raw<-read.csv('../data/pilot0_ratings.csv')
+
+raw
+```
+
+
+
+```{r}
+
+
+
+
+### Z-score within participants and concepts
+ratings_df<- ratings_df%>%group_by(subject_id,concept)%>%mutate(z_rating = (response - mean(response))/sd(response))
+
+
+### Find mean ratings and normalize to 0,1 range
+mean_ratings<- ratings_df%>%group_by(category,concept,color_index)%>%summarize(mean_rating = mean(response), mean_z_rating = mean(z_rating))
+
+mean_ratings<-mean_ratings%>%group_by(concept)%>%mutate(mean_rating_norm = (mean_rating-min(mean_rating))/(max(mean_rating)-min(mean_rating)), mean_z_rating_norm = (mean_z_rating-min(mean_z_rating))/(max(mean_z_rating)-min(mean_z_rating)) )
+
+### Create concept X color matrix 
+
+ratings_mat_raw <- matrix(0,30,58)
+unique(mean_ratings$concept)
+for(i in 1:30){
+  for(j in 1:58){
+  ratings_mat_raw[i,j] <-mean_ratings[mean_ratings$concept==unique(mean_ratings$concept)[i],]$mean_rating[j]
+  }
+}
+
+ratings_mat_raw
+rownames(ratings_mat_raw)<- unique(mean_ratings$concept)
+ratings_mat_raw<- as.data.frame(ratings_mat_raw)
+
+
+
+ratings_mat_raw$concept<- rownames(ratings_mat_raw)
+
+
+m_sub<-ratings_mat_raw[ratings_mat_raw$concept%in%bcluster3,]
+
+colnames(m_sub)<-c(seq(1,58),'concept')
+#for(j in 1:4){
+j=2
+m_ratings<-m_sub[j,]%>%select(as.character(seq(1,58)))
+
+
+m_ratings_sorted<-sort(m_ratings, decreasing = T)
+m_ratings_sorted<- as.vector(m_ratings_sorted)
+
+hp_df<- data.frame(index = names(m_ratings_sorted), rating = t(m_ratings_sorted) )
+colnames(hp_df)<- c('index','rating')
+color_dict_t<- tibble(hex = as.character(color_dict_df$hex), index = as.character(color_dict_df$index))
+hp_df$index <- factor(hp_df$index, levels = color_dict_t$index)
+
+
+p<-ggplot(hp_df, aes(x=reorder(index, -rating), y=rating, fill= index ))+geom_col()+ scale_fill_manual(values= color_dict_t$hex)+theme_classic()+ theme(panel.background = element_rect(fill = "grey",colour = "grey"), legend.position ="none", axis.ticks.x=element_blank(), axis.text.x = element_blank()) + labs(x="", y="ratings")+ lims(y=c(0,1))+ ggtitle(paste0(m_sub$concept[j],"_raw"))
+
+p
+
+#ggsave(filename = paste0("hp_",(paste0(m_sub$concept[j],"_",i,"_PCS.png"))), plot= last_plot(), width= 20, height = 10, dpi=300, device = 'png')
+print(p)
+
+
+```
+
+
+```{r}
+
+temp<- matrix(data = rbeta(150, 5, 10), nrow=30, ncol=5)
+
+noiseless<-cbind(temp,temp,temp,temp,temp)
+
+noise_mat<- matrix(data = rnorm(150, 0, 1), nrow=30, ncol=25)
+
+
+noisy_mat<- noiseless+ noise_mat
+
+
+### Generate PCA object from concept x color ratings matrix
+pca_obj<-ratings_mat[,-1]%>%prcomp(scale=F,center=F, retx = T)
+
+### Function for reconstructing the matrix using fewer components
+reverse_pca <- function(n_comp = 2, pca_object = pca_obj){
+  
+  ## Multiply the matrix of rotated data by the transpose of the matrix 
+  ## of eigenvalues (i.e. the component loadings) to get back to a 
+  ## matrix of original data values
+  recon <- pca_object$x[, 1:n_comp] %*% t(pca_object$rotation[, 1:n_comp])
+  
+  ## Reverse any scaling and centering that was done by prcomp()
+  
+  if(all(pca_object$scale != FALSE)){
+    ## Rescale by the reciprocal of the scaling factor, i.e. back to
+    ## original range.
+    recon <- scale(recon, center = FALSE, scale = 1/pca_object$scale)
+  }
+  if(all(pca_object$center != FALSE)){
+    ## Remove any mean centering by adding the subtracted mean back in
+    recon <- scale(recon, scale = FALSE, center = -1 * pca_object$center)
+  }
+  
+  ## Make it a data frame that we can easily pivot to long format
+  ## (because that's the format that the excellent imager library wants
+  ## when drawing image plots with ggplot)
+  recon_df <- data.frame(cbind(1:nrow(recon), recon))
+  colnames(recon_df) <- c("x", 1:(ncol(recon_df)-1))
+
+  ## Return the data to long form 
+  recon_df_long <- recon_df %>%
+    tidyr::pivot_longer(cols = -x, 
+                        names_to = "y", 
+                        values_to = "value") %>%
+    mutate(y = as.numeric(y)) %>%
+    arrange(y) %>%
+    as.data.frame()
+  
+  recon_df_long
+  return(recon_df)
+}
+
+
+recon_err=numeric()
+
+for(i in 2:30){
+m<-reverse_pca(n_comp = i )
+
+#recon_err[i]= norm(as.matrix(noisy_mat-m[,-1]), type = 'F')
+recon_err[i]= norm(as.matrix(ratings_mat[,-1]-m[,-1]), type = 'F')
+}
+
+
+plot(recon_err[-1])
+#write.csv(m, 'ratings_matrix_11PC.csv')
+
+noisy_mat
+
+
+
+```
+
+
+
+```{r}
+
+concept_list<-as.character(ratings_mat[,1])
+
+pc_cor_df=numeric()
+
+
+
+for(i in 2:30){
+pc_mat<-read.csv(paste0('ratings_matrix_',i,'PC.csv'))
+
+r_vals = diag(cor(t(ratings_mat[,-1]),t(pc_mat[,-c(1:2)])))
+names(r_vals)<-concept_list
+
+pc_cor_df<-rbind(pc_cor_df,cbind(i,t(r_vals)))
+}
+
+pc_cor_df<- as.data.frame(pc_cor_df)
+colnames(pc_cor_df)[1]<-"num_pc"
+
+r<- ggplot(pc_cor_df, aes_string(y=this_concept))
+
+
+
+pc_cor_df_l <- pc_cor_df%>%pivot_longer(-num_pc, names_to = 'concept', values_to = 'pearson_r')
+mean_pc_cor_df<-pc_cor_df_l%>%group_by(num_pc)%>%summarize(mean_r = mean(pearson_r))
+
+
+
+for (this_concept in concept_list){
+  
+p<-ggplot(pc_cor_df, aes_string(y=this_concept)) + geom_line(aes(x=num_pc)) +labs(x="No. of PCs", y = "pearson r") + theme_classic() + ggtitle(this_concept)
+
+
+print(p)
+}
+
+
+```
+
+```{r}
+ggplot(pc_cor_df_l, aes(x=num_pc, y=pearson_r, color= concept))+geom_line()+theme_classic()+geom_line(data=mean_pc_cor_df, aes(x=num_pc, y= mean_r),size = 2, col='black')
+```
+
+
+
+```{r}
+
+
+pca_obj<-ratings_mat[,-1]%>%prcomp(scale=F,center=F, retx = T)
+
+recon_mat_us<- reverse_pca(pca_obj, n_comp = 8)
+
+mat_diff<- as.matrix(ratings_mat[,-1]-recon_mat_us[,1])
+F_norm_us<- norm(mat_diff, type = 'F')
+
+
+F_norms<-numeric()
+for (i in 1:100){
+perm_mat<-ratings_mat[,-1][sample(nrow(ratings_mat[,-1])),sample(ncol(ratings_mat[,-1]))]
+
+
+pca_obj<-perm_mat%>%prcomp(scale=F,center=F, retx = T)
+
+recon_mat<- reverse_pca(pca_obj, n_comp = 8)
+
+  mat_diff<- as.matrix(perm_mat-recon_mat[,1])
+  mat_norm<- norm(mat_diff, type = 'F')
+  F_norms[i]<-mat_norm
+  
+}
+
+hist(F_norms)
+abline(v=F_norm_us,col="red", lty=3)
+
+
+
+mean(F_norms)
+
+
+```
+
+
+
+```{r}
+
+pc_cor_df=numeric()
+
+for(i in 2:30){
+for(j in 1:10){
+  
+#pc_mat<-read.csv(paste0('ratings_matrix_',i,'PC.csv'))
+#pc_vec<-as.vector(as.matrix(pc_mat[,-c(1,2)]))
+  
+orig_vec<-as.vector(as.matrix(ratings_mat[,-1]))
+shuffle_inds<-sample(length(orig_vec))
+orig_mat_shuffle<- matrix(orig_vec[shuffle_inds],30,58)
+
+#pc_mat_shuffle<-matrix(pc_vec[shuffle_inds],30,58)
+pca_obj<- orig_mat_shuffle%>% prcomp(scale=F,center=F, retx = T)
+pc_mat_shuffle<- reverse_pca(n_comp = i, pca_obj=pca_obj)
+pc_mat_shuffle<-pc_mat_shuffle[,-c(1)]
+
+
+
+r_vals = diag(cor(t(orig_mat_shuffle),t(pc_mat_shuffle)))
+
+names(r_vals)<-concept_list
+
+pc_cor_df<-rbind(pc_cor_df,cbind(i,t(r_vals)))
+}}
+
+pc_cor_df<- as.data.frame(pc_cor_df)
+colnames(pc_cor_df)[1]<-"num_pc"
+
+
+
+
+
+pc_cor_df_l <- pc_cor_df%>%pivot_longer(-num_pc, names_to = 'concept', values_to = 'pearson_r')
+mean_pc_cor_df_<-pc_cor_df_l%>%group_by(num_pc)%>%summarize(mean_r = mean(pearson_r))
+pc_cor_df_l<- as.data.frame(pc_cor_df_l)
+
+pc_cor_df_grouped<-pc_cor_df_l%>%group_by(num_pc, concept)%>%summarize(mean_r = mean(pearson_r), se = (sd(pearson_r)/sqrt(n())))
+
+
+ggplot(pc_cor_df_grouped, aes(x=num_pc, y=mean_r, color= concept))+
+  geom_line()+theme_classic()+
+  geom_ribbon(aes(ymin=mean_r-se,ymax=mean_r+se),alpha=0.3)+
+  geom_line(data=mean_pc_cor_df, aes(x=num_pc, y= mean_r),size = 1, col='black', linetype='dashed')+
+  geom_line(data=mean_pc_cor_df_, aes(x=num_pc, y= mean_r),size = 1, col='yellow', linetype='dashed') + theme(legend.position = 'none')+geom_text( aes( x=5, y=0.9, label="unshuffled"),  color="black", size=4.5 , angle=45)
+
+
+```
+
+
+
+
+
+```{r}
+pc_vec<-as.vector(as.matrix(pc_mat[,-c(1,2)]))
+shuffle_inds<-sample(length(pc_vec))
+pc_mat_shuffle<-matrix(pc_vec[shuffle_inds],30,58)
+
+orig_vec<-as.vector(as.matrix(ratings_mat[,-1]))
+orig_mat_shuffle<- matrix(orig_vec[shuffle_inds],30,58)
+
+
+r_vals = diag(cor(t(orig_mat_shuffle),t(pc_mat_shuffle)))
+
+
+rankMatrix(orig_mat_shuffle)
 
 ```
 
