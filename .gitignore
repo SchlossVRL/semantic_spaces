@@ -1,2 +1,8 @@
 *.ipynb_checkpoints
 *.csv
+*.pdf
+*.fig
+*.html
+*.key
+*.ai
+.Rhistory
