@@ -6,3 +6,4 @@
 *.key
 *.ai
 .Rhistory
+.DS_Store
