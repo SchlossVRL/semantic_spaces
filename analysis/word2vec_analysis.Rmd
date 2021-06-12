@@ -19,19 +19,52 @@ col_rating_cols = colnames(df)[2:59]
 w2v_cols = colnames(df)[63:length(colnames(df))]
 pc_cols = colnames(df)[60:62]
 
-holdout_rows = seq(from=1,to=30,by=5)
+holdout_seq= seq(from=1,to=30,by=5)
 
 ```
 
 
 ```{r}
+c1_results<-{}
+c2_results<-{}
+c3_results<-{}
+
+for(i in 0:4){
+holdout_rows = holdout_seq+i
 c1_model = cv.glmnet(as.matrix(df[!(rownames(df)%in%holdout_rows),w2v_cols]),as.matrix(df[!(rownames(df)%in%holdout_rows),pc_cols][1]))
 c2_model = cv.glmnet(as.matrix(df[!(rownames(df)%in%holdout_rows),w2v_cols]),as.matrix(df[!(rownames(df)%in%holdout_rows),pc_cols][2]))
 c3_model = cv.glmnet(as.matrix(df[!(rownames(df)%in%holdout_rows),w2v_cols]),as.matrix(df[!(rownames(df)%in%holdout_rows),pc_cols][3]))
-plot(c1_model)
-plot(c2_model)
-plot(c3_model)
-print(c1_model)
+
+
+preds = predict(c1_model, newx = as.matrix(df[(rownames(df)%in%holdout_rows),w2v_cols]), s = "lambda.min")
+targets = df[(rownames(df)%in%holdout_rows),pc_cols][1]
+c1_results<- rbind(c1_results,cbind(df[(rownames(df)%in%holdout_rows),'concepts'],preds, targets))
+
+preds = predict(c2_model, newx = as.matrix(df[(rownames(df)%in%holdout_rows),w2v_cols]), s = "lambda.min")
+targets = df[(rownames(df)%in%holdout_rows),pc_cols][2]
+c2_results<- rbind(c2_results,cbind(df[(rownames(df)%in%holdout_rows),'concepts'],preds, targets))
+
+preds = predict(c3_model, newx = as.matrix(df[(rownames(df)%in%holdout_rows),w2v_cols]), s = "lambda.min")
+targets = df[(rownames(df)%in%holdout_rows),pc_cols][3]
+c3_results<- rbind(c3_results,cbind(df[(rownames(df)%in%holdout_rows),'concepts'],preds, targets))
+
+
+}
+
+colnames(c1_results)<- c('concepts','pred','target')
+colnames(c2_results)<- c('concepts','pred','target')
+colnames(c3_results)<- c('concepts','pred','target')
+
+print(paste0('coord 1 correlations:',round(cor(c1_results$pred,c1_results$target),3)))
+
+print(paste0('coord 2 correlations:',round(cor(c2_results$pred,c2_results$target),3)))
+
+print(paste0('coord 3 correlations:',round(cor(c3_results$pred,c3_results$target),3)))
+
+predicted_coords<-data.frame(cbind(concepts = c1_results$concepts, c1_pred= c1_results$pred,c2_pred=  c2_results$pred, c3_pred=c3_results$pred))
+
+write.csv(predicted_coords,'../data/w2v_predicted_coords.csv')
+
 ```
 
 ```{r}
