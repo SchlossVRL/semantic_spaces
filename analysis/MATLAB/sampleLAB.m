@@ -71,9 +71,18 @@ b = a;
     lab(indices,:) = [];
     labOrig(indices,:) = [];
     
+
     % Plot the selected points
-    scatter3(lab(:,2),lab(:,3),lab(:,1),50,rgb,'filled','MarkerEdgeColor','none');
+    patch([100 100 -100 -100],[-100 100 100 -100],[87.5,87.5,87.5,87.5],'yellow','LineStyle','--','FaceAlpha',.2,'EdgeColor','black')
+    
+    scatter3(lab(:,2),lab(:,3),lab(:,1),50,rgb,'filled','MarkerEdgeColor','black');
+    
+%     scatter3(lab(lab(:,1)<88,2),lab(lab(:,1)<88,3),lab(lab(:,1)<88,1),50,rgb(lab(:,1)<88,:),'filled','MarkerEdgeColor','black','MarkerFaceAlpha',.2);
+%     hold on
+%     scatter3(lab(lab(:,1)>=88,2),lab(lab(:,1)>=88,3),lab(lab(:,1)>=88,1),50,rgb(lab(:,1)>=88,:),'filled','MarkerEdgeColor','black');
+%     hold off
     daspect([1 1 1]); axis([-100 100 -100 100 0 100]); grid on;
+    patch([100 100 -100 -100],[-100 100 100 -100],[87.5,87.5,87.5,87.5],'yellow','LineStyle','--','FaceAlpha',.2,'EdgeColor','black')
     title(['LAB space with uniformly distributed points for \delta = ',num2str(delta),' \delta 2 =',num2str(delta_2)]);
 %     for i = 1: length(lab)
 %         text(lab(i,2)+2,lab(i,3)+2,lab(i,1)+2,num2str(i));

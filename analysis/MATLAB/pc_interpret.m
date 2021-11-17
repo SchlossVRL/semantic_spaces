@@ -1,23 +1,30 @@
-%Script for generating plots based on color space regressions and make
-%predictions based on those predictions
+%%% This script can 
+%%% (1) compute weight matrices for approximating the right singular
+%%% vectors of color-concept association matrices based on colorometric
+%%% properties of the colors both in a hold-one-out fashion and for intact
+%%% matrices. 
+%%% (2) compute the predicted right singular vectors based on colorimetric
+%%% properties
+%%% (3) generate dandelion plots for the weights on the first and second
+%%% hue harmonics and barplots for the weights on chroma and lightness
 
 %clear all
 
-%%% 0 is holdout, 1 is no holdout
-mode = 1;
+%%% 1 is holdout, 0 is no holdout
+mode = 0;
+num_pc = 10;
 
 color_coords = readmatrix('../../data/UW58_colors.csv'); %%file with all color coordinates xyy Lab ch
 color_coords = color_coords(:,4:6);
 col = colorconvert( color_coords, 'Lab', 'D65');
 
-
 if mode == 1
 
-    for this_col = 1:58
+    for this_col = 1:58 %% iterate through all colors
     close all;
     clf;
-    cors=zeros(2,8)
-    predictions = zeros(8,58)
+    cors = zeros(2,8);
+    predictions = zeros(num_pc,58);  %$ this will hold the predicted right singular vectors (first 8 in our case)
     C = cell(40,1); y = cell(40,1);  % 40 = upper bound on number of expts
     A = cell(30,1); L = cell(30,1);  % 30 = upper bound on number of models
     d = 1;
@@ -29,30 +36,35 @@ if mode == 1
 
 
     figure(30);
-    num_pc=8;
+    
 
-    filename = strcat('../../data/8_basis_vecs_scaled_color_',string(this_col),'.csv');
-    basis_vecs = readmatrix(filename,  'Range', [2,2]);
-    all_weights = zeros(7,8)
+%     filename = strcat('../../data/8_basis_vecs_scaled_color_',string(this_col),'.csv');%%% load right singular vecs with given color withheld
+%     basis_vecs = readmatrix(filename,  'Range', [2,2]);
+    filename = strcat('../../data/basis_vecs_scaled_color_',string(this_col),'.csv');
+    basis_vecs = readmatrix(filename_,  'Range', [2,1]);
+    
+    basis_vecs = basis_vecs(1:end,1:num_pc)
+    all_weights = zeros(7,num_pc); %%% weight matrix we want to learn with weights on each colorimetric property for each component
 
-    for pc = 1:8
+    for pc = 1:num_pc
 
         figure(pc);
-        L_weights=[]
-        C_weights=[]
+        L_weights=[];
+        C_weights=[];
         r=0;
         ndatasets = 1;
         C = col;
-        data = basis_vecs(:,pc)
+        data = basis_vecs(:,pc); %%% select the nth right singular vector (out of 8)
         ndatasets = 1;
 
-        y = data;
+        y = data; %%% we are predicting the singular vector values so they are our targets
         expt_name = string(pc);
-        On = ones(size(y,1),1);
-        achrom = zeros(size(y,1),1);
+        On = ones(size(y,1),1); %% intercepts
+        achrom = zeros(size(y,1),1); %% 
         achrom(23:27) = 1;
         i=1;
         % regressors used (constant, L, 1st harmonic, 2nd harmonic, and Cab)
+        %%% remove the regressor values for the color we're holding out
         C.L(this_col) = [];
         C.hab(this_col)=[];
         C.Cab(this_col)=[];
@@ -89,11 +101,11 @@ if mode == 1
 
         % convert hue angles to RGB so we can color the plots.
 
-        FIT = AllTheColors( [78+14*sind(hangle) 60*ones(nsubjects,1) hangle], 'Lchab', 'D65', 'D65' );
+        FIT = colorconvert( [78+14*sind(hangle) 60*ones(nsubjects,1) hangle], 'LChab', 'D65', 'D65' );
         [R,G,B] = Lab2RGB( FIT.L, FIT.a, FIT.b );
         cols = [R G B];
 
-        FIT2 = AllTheColors( [78+14*sind(hangle2) 60*ones(2*nsubjects,1) hangle2], 'Lchab', 'D65', 'D65' );
+        FIT2 = colorconvert( [78+14*sind(hangle2) 60*ones(2*nsubjects,1) hangle2], 'LChab', 'D65', 'D65' );
         [R2,G2,B2] = Lab2RGB( FIT2.L, FIT2.a, FIT2.b );
         cols2 = [R2 G2 B2];
 
@@ -140,28 +152,37 @@ if mode == 1
 
     %     predictions(pc,:) = transpose(A{1}*weights);
     %     csvwrite('../../data/regression_predictions.csv',predictions)
-    %      csvwrite('../../data/uw58_regressor_vals.csv',transpose(A{1}))
+    %     NOTE THIS
+    %     csvwrite('../../data/uw58_regressor_vals.csv',transpose(A{1}))
+
     %     
 
-    %csvwrite('../../data/8_regression_weights.csv',all_weights)
+  
     
 
 
 
     end
-    filename = strcat('../../data/8_regression_weights_color_',string(this_col),'.csv');
+    filename = strcat('../../data/',string(num_pc),'_regression_weights_color_',string(this_col),'.csv'); 
+    %%% 7x8 matrix of weights to get an approximate right singular matrix
+    %%% from colorometric values.
+   
     csvwrite(filename,all_weights);  
 
     end
     
     
-    %--------------%
+    %----------------------------------------------------------------------------------------%
+    %----------------------------------------------------------------------------------------%
+    %----------------------------------------------------------------------------------------%
+    %----------------------------------------------------------------------------------------%
+    
 elseif mode == 0
     
     close all;
     clf;
-    cors=zeros(2,8)
-    predictions = zeros(8,58)
+    cors=zeros(2,8);
+    predictions = zeros(num_pc,58);
     C = cell(40,1); y = cell(40,1);  % 40 = upper bound on number of expts
     A = cell(30,1); L = cell(30,1);  % 30 = upper bound on number of models
     d = 1;
@@ -169,19 +190,15 @@ elseif mode == 0
     c=0;
     l=1;
 
-
-  
-    num_pc=8;
-    %figure(1)
-
-    basis_vecs = readmatrix('../../data/8_basis_vecs_scaled.csv',  'Range', [2,2]);
-    all_weights = zeros(7,8)
+    basis_vecs = readmatrix('../../data/basis_vecs_scaled.csv',  'Range', [2,2]);
+    all_weights = zeros(7,num_pc);
     
     
     
-    for pc = 1:8
-            L_weights =[]
-            C_weights=[]
+    for pc = 1:num_pc
+            
+        L_weights =[]
+        C_weights=[]
 
         figure(pc);
         
@@ -231,11 +248,11 @@ elseif mode == 0
 
         % convert hue angles to RGB so we can color the plots.
 
-        FIT = AllTheColors( [78+14*sind(hangle) 60*ones(nsubjects,1) hangle], 'Lchab', 'D65', 'D65' );
+        FIT = colorconvert( [78+14*sind(hangle) 60*ones(nsubjects,1) hangle], 'LChab', 'D65', 'D65' );
         [R,G,B] = Lab2RGB( FIT.L, FIT.a, FIT.b );
         cols = [R G B];
 
-        FIT2 = AllTheColors( [78+14*sind(hangle2) 60*ones(2*nsubjects,1) hangle2], 'Lchab', 'D65', 'D65' );
+        FIT2 = colorconvert( [78+14*sind(hangle2) 60*ones(2*nsubjects,1) hangle2], 'LChab', 'D65', 'D65' );
         [R2,G2,B2] = Lab2RGB( FIT2.L, FIT2.a, FIT2.b );
         cols2 = [R2 G2 B2];
 
@@ -316,13 +333,19 @@ hold on;
 l=l+1;
     
 predictions(pc,:) = transpose(A{1}*weights);
+csvwrite(strcat('../../data/',string(num_pc),'_regression_weights.csv'),all_weights);
 
 
     end
-    csvwrite('../../data/8_regression_weights.csv',all_weights)
+    
     orient(fig,'landscape')
     set(fig,'PaperUnits','inches','PaperPosition',[0 0 15 6], 'PaperSize',[16 7]);
-    print(fig,'dand_plots_VSS/lightness_chroma','-dpdf');
+    
+    
+    %print(fig,'dand_plots_VSS/lightness_chroma','-dpdf');
+    
+    
+    
     csvwrite('../../data/regression_predictions.csv',predictions)
     
 
@@ -390,11 +413,11 @@ end
 % 
 %     % convert hue angles to RGB so we can color the plots.
 % 
-%     FIT = AllTheColors( [78+14*sind(hangle) 60*ones(nsubjects,1) hangle], 'Lchab', 'D65', 'D65' );
+%     FIT = AllTheColors( [78+14*sind(hangle) 60*ones(nsubjects,1) hangle], 'LChab', 'D65', 'D65' );
 %     [R,G,B] = Lab2RGB( FIT.L, FIT.a, FIT.b );
 %     cols = [R G B];
 % 
-%     FIT2 = AllTheColors( [78+14*sind(hangle2) 60*ones(2*nsubjects,1) hangle2], 'Lchab', 'D65', 'D65' );
+%     FIT2 = AllTheColors( [78+14*sind(hangle2) 60*ones(2*nsubjects,1) hangle2], 'LChab', 'D65', 'D65' );
 %     [R2,G2,B2] = Lab2RGB( FIT2.L, FIT2.a, FIT2.b );
 %     cols2 = [R2 G2 B2];
 % 

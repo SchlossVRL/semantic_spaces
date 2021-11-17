@@ -56,7 +56,7 @@ uw58<-read.csv('../data/UW_58_rgb.csv', header = F) ## Read in dataset with colo
 
 ratings_df$color_index<- ratings_df$color_index+1
 
-ratings_df$response<-(ratings_df$response-min(ratings_df$response))/(max(ratings_df$response)-min(ratings_df$response))
+#ratings_df$response<-(ratings_df$response-min(ratings_df$response))/(max(ratings_df$response)-min(ratings_df$response))
 ratings_df
 
 ## Remove problematic subjects
@@ -66,10 +66,14 @@ ratings_df<- ratings_df%>%filter(subject_id!= 'e70koc6vf0tnpg0f4bvz')
 
 
 
-ratings_df<- ratings_df%>%filter(!(subject_id%in% unique(d$subject_id)))
+#ratings_df<- ratings_df%>%filter(!(subject_id%in% unique(d$subject_id)))
 ratings_df<- ratings_df%>%filter(prompt!= "<p style='width:1000px'>In this experiment yo")
 
 ratings_df%>%group_by(concept)%>%summarize(num_subs = length(unique(subject_id)) )
+
+
+ratings_df$response<- (ratings_df$response+200)/400
+
 
 ```
 
@@ -154,6 +158,10 @@ mean_ig_cor
 ```
 
 
+
+```{r}
+
+```
 
 
 ### Replicate Tim's initial analyses and visualizations
@@ -324,21 +332,27 @@ test.complete(cor_mat,w = unique(mean_ratings$prompt),jc=rgb(uw58[,1],uw58[,2],u
 `pilot0_ratings.csv` has the tidied up version of all the raw data.
 
 ```{r}
+
+
 really_run=F
 
-ratings_df$color_rgb
 if( really_run==T){
 ratings_df$color_rgb<- paste0("#", ratings_df$color_rgb)
 
-#ratings_df$color_rgb<-ifelse(ratings_df$color_index==23, '#000000',ratings_df$color_rgb)
+ratings_df$color_rgb<-ifelse(ratings_df$color_index==23, '#000000',ratings_df$color_rgb)
 
 colnames(ratings_df)[which(names(ratings_df) == "color_rgb")] <- "color_hex"
 colnames(ratings_df)[which(names(ratings_df) == "concept")] <- "category"
 colnames(ratings_df)[which(names(ratings_df) == "prompt")] <- "concept"
 
-#write.csv(ratings_df,'../data/pilot0_ratings.csv')
+write.csv(ratings_df,'../data/pilot0_ratings_unscaled.csv')
 }
-ratings_df<-read.csv('../data/pilot0_ratings.csv')
+ratings_df<-read.csv('../data/pilot0_ratings_unscaled.csv')
+```
+
+
+```{r}
+ratings_df
 ```
 
 
@@ -348,10 +362,10 @@ Predictions from Matrix completion vs. true ratings for all concept-categories.
 mean_ratings<- ratings_df%>%group_by(concept,color_index)%>%summarize(mean_response =mean(response))
 
 
-cor_mat <- matrix(0,20,20)
+cor_mat <- matrix(0,30,58)
 unique(mean_ratings$concept)
-for(i in 1:20){
-  for(j in 1:20){
+for(i in 1:30){
+  for(j in 1:58){
   cor_mat[i,j] <-mean_ratings[mean_ratings$concept==unique(mean_ratings$concept)[i],]$mean_response[j]
   }
   }
@@ -445,15 +459,16 @@ for(i in c(1:5)){
 
 
 ```{r}
-ratings_df
+
 ##Load up the saved ratings
-ratings_df<-read.csv('../data/pilot0_ratings.csv')
+ratings_df<-read.csv('../data/pilot0_ratings_unscaled.csv')
 
 ratings_df$concept<- as.character(ratings_df$concept) 
 ratings_df$color_rgb<- as.character(ratings_df$color_rgb) 
 ## change some things to chars
 ratings_df$category<- as.character(ratings_df$category)   
 ratings_df$color_hex<- as.character(ratings_df$color_hex) 
+
 
 
 ```
@@ -486,7 +501,7 @@ geom_errorbar(aes(ymin = mean_rating-(sd_rating/sqrt(num_raters)), ymax = mean_r
   facet_wrap(~concept,scales= 'free_x')+
   scale_fill_manual(values=color_dict)+
   theme_classic() +
-  theme(axis.ticks.x=element_blank(),axis.text.x=element_blank(),axis.text=element_text(size=15, colour = 'black'),axis.title=element_text(size=14,face="bold"), strip.text = element_text(size=20,face="bold"),panel.background = element_rect(fill = "#595959",
+  theme(axis.ticks.x=element_blank(),axis.text.x=element_text(angle=90,size=6),axis.text=element_text(size=15, colour = 'black'),axis.title=element_text(size=14,face="bold"), strip.text = element_text(size=20,face="bold"),panel.background = element_rect(fill = "#595959",
                                 colour = "#595959",
                                 size = 0.5, linetype = "solid"),
   plot.background = element_rect(fill="#595959") )+
@@ -620,16 +635,19 @@ Next we find the mean z-scored rating and normalize them to a 0-1 range.
 Finally we construct a 30x58 concept by color matrix.
 
 
+
+
+
 ```{r}
 
 
 ### Z-score within participants 
-ratings_df<- ratings_df%>%group_by(subject_id)%>%mutate(z_rating = (response - mean(response))/sd(response))
+#ratings_df<- ratings_df%>%group_by(subject_id)%>%mutate(z_rating = (response - mean(response))/sd(response))
 
 
 ### Find mean ratings and normalize to 0,1 range
 
-mean_ratings<- ratings_df%>%group_by(category,concept,color_index)%>%summarize(mean_rating = mean(response), mean_z_rating = mean(z_rating))
+mean_ratings<- ratings_df%>%group_by(category,concept,color_index)%>%summarize(mean_rating = mean(response))
 
 
 
@@ -648,14 +666,13 @@ ratings_mat <- matrix(0,30,58)
 unique(mean_ratings$concept)
 for(i in 1:30){
   for(j in 1:58){
-  ratings_mat[i,j] <-mean_ratings[mean_ratings$concept==unique(mean_ratings$concept)[i],]$mean_z_rating_norm[j]
+  ratings_mat[i,j] <-mean_ratings[mean_ratings$concept==unique(mean_ratings$concept)[i],]$mean_rating[j]
   }
 }
 
 ratings_mat
 ### Compute ratings matrix and correlation matrix
 
-ratings_mat
 rownames(ratings_mat)<- unique(mean_ratings$concept)
 ratings_mat
 dim(ratings_mat)
@@ -791,9 +808,9 @@ ratings_mat
 really_run=F
 if(really_run==T){
 #write.csv(ratings_mat, '../data/uw_71_ratings_matrix.csv')
-write.csv(ratings_mat, '../data/uw_58_ratings_matrix.csv')
+write.csv(ratings_mat, '../data/uw_58_ratings_matrix_unscaled.csv')
 color_dict_df<- data.frame('hex' =color_dict, 'index' = names(color_dict))
-write.csv(color_dict_df, '../data/color_dict.csv')
+write.csv(color_dict_df, '../data/color_dict_uw58.csv')
 }
 
 
@@ -804,16 +821,82 @@ write.csv(color_dict_df, '../data/color_dict.csv')
 
 ```{r}
 if(!exists('ratings_mat')){
-  ratings_mat = read.csv('../data/uw_58_ratings_matrix.csv')
+  ratings_mat = read.csv('../data/uw_58_ratings_matrix_unscaled.csv')
 }
 
 if(!exists('color_dict_df')){
-  color_dict_df = read.csv('../data/color_dict.csv')
+  color_dict_df = read.csv('../data/color_dict_uw58.csv')
 }
 
 ### Generate PCA object from concept x color ratings matrix
 pca_obj<-ratings_mat[,-1]%>%prcomp(scale=F,center=T, retx = T)
+```
 
+
+```{r}
+### Function for reconstructing the matrix using fewer components
+
+reverse_pca <- function(n_comp = 2, pca_object = pca_obj, explore = F, num_sd=1, vmax=F){
+  
+  ## Multiply the matrix of rotated data by the transpose of the matrix 
+  ## of eigenvalues (i.e. the component loadings) to get back to a 
+  ## matrix of original data values
+  
+  
+  if(explore==T){
+    scores = numeric(n_comp)
+    scores[n_comp]<- pca_object$sdev[n_comp]*num_sd
+    if(vmax==T){
+      vmaxobj = varimax(pca_object$rotation)
+      
+       recon <- scores %*% t(vmaxobj$loadings[, 1:n_comp])
+    }else{
+
+    recon <- scores %*% t(pca_object$rotation[, 1:n_comp])
+    }
+  }
+   else{
+    recon <- pca_object$x[, 1:n_comp] %*% t(pca_object$rotation[, 1:n_comp])
+  }
+  ## Reverse any scaling and centering that was done by prcomp()
+  
+  if(all(pca_object$scale != FALSE)){
+    ## Rescale by the reciprocal of the scaling factor, i.e. back to
+    ## original range.
+    recon <- scale(recon, center = FALSE, scale = 1/pca_object$scale)
+  }
+  
+
+  
+  #if(all(pca_object$center != FALSE)){
+    ## Remove any mean centering by adding the subtracted mean back in
+   # recon <- scale(recon, scale = FALSE, center = -1 * pca_object$center)
+  #}
+  
+  
+  
+  ## Make it a data frame that we can easily pivot to long format
+  ## (because that's the format that the excellent imager library wants
+  ## when drawing image plots with ggplot)
+  recon_df <- data.frame(cbind(1:nrow(recon), recon))
+  colnames(recon_df) <- c("x", 1:(ncol(recon_df)-1))
+
+  ## Return the data to long form 
+  recon_df_long <- recon_df %>%
+    tidyr::pivot_longer(cols = -x, 
+                        names_to = "y", 
+                        values_to = "value") %>%
+    mutate(y = as.numeric(y)) %>%
+    arrange(y) %>%
+    as.data.frame()
+  
+  recon_df_long
+  return(recon_df)
+}
+```
+
+
+```{r}
 for(i in 1:30){
   
 m<-reverse_pca(n_comp =i,pca_object = pca_obj)
@@ -822,8 +905,9 @@ write.csv(m, paste0('ratings_matrix_',i,'PC.csv'))
 }
 
 ## Example
-m<-reverse_pca(n_comp = 11)
+m<-reverse_pca(n_comp = 29)
 
+m
 ```
 
 
@@ -860,9 +944,6 @@ a<- a+ theme_classic()
 a
 ```
 
-```{r}
-kmeans_obj
-```
 
 
 
@@ -1007,11 +1088,6 @@ p<-ggplot(hp_df, aes(x=reorder(index, -rating), y=rating, fill= index ))+geom_co
 p
 ```
 
-```{r}
-raw<-read.csv('../data/pilot0_ratings.csv')
-
-raw
-```
 
 
 
@@ -1088,65 +1164,7 @@ noisy_mat<- noiseless+ noise_mat
 ### Generate PCA object from concept x color ratings matrix
 pca_obj<-ratings_mat[,-1]%>%prcomp(scale=F,center=T, retx = T)
 
-### Function for reconstructing the matrix using fewer components
 
-reverse_pca <- function(n_comp = 2, pca_object = pca_obj, explore = F, num_sd=1, vmax=F){
-  
-  ## Multiply the matrix of rotated data by the transpose of the matrix 
-  ## of eigenvalues (i.e. the component loadings) to get back to a 
-  ## matrix of original data values
-  
-  
-  if(explore==T){
-    scores = numeric(n_comp)
-    scores[n_comp]<- pca_object$sdev[n_comp]*num_sd
-    if(vmax==T){
-      vmaxobj = varimax(pca_object$rotation)
-      
-       recon <- scores %*% t(vmaxobj$loadings[, 1:n_comp])
-    }else{
-
-    recon <- scores %*% t(pca_object$rotation[, 1:n_comp])
-    }
-  }
-   else{
-    recon <- pca_object$x[, 1:n_comp] %*% t(pca_object$rotation[, 1:n_comp])
-  }
-  ## Reverse any scaling and centering that was done by prcomp()
-  
-  if(all(pca_object$scale != FALSE)){
-    ## Rescale by the reciprocal of the scaling factor, i.e. back to
-    ## original range.
-    recon <- scale(recon, center = FALSE, scale = 1/pca_object$scale)
-  }
-  
-
-  
-  #if(all(pca_object$center != FALSE)){
-    ## Remove any mean centering by adding the subtracted mean back in
-   # recon <- scale(recon, scale = FALSE, center = -1 * pca_object$center)
-  #}
-  
-  
-  
-  ## Make it a data frame that we can easily pivot to long format
-  ## (because that's the format that the excellent imager library wants
-  ## when drawing image plots with ggplot)
-  recon_df <- data.frame(cbind(1:nrow(recon), recon))
-  colnames(recon_df) <- c("x", 1:(ncol(recon_df)-1))
-
-  ## Return the data to long form 
-  recon_df_long <- recon_df %>%
-    tidyr::pivot_longer(cols = -x, 
-                        names_to = "y", 
-                        values_to = "value") %>%
-    mutate(y = as.numeric(y)) %>%
-    arrange(y) %>%
-    as.data.frame()
-  
-  recon_df_long
-  return(recon_df)
-}
 
 
 recon_err=numeric()
@@ -1180,6 +1198,11 @@ pc_cor_df=numeric()
 
 for(i in 2:30){
 pc_mat<-read.csv(paste0('ratings_matrix_',i,'PC.csv'))
+
+
+###
+#
+###
 
 r_vals = diag(cor(t(ratings_mat[,-1]),t(pc_mat[,-c(1:2)])))
 names(r_vals)<-concept_list
@@ -1272,7 +1295,7 @@ p<-ggplot(pc_cor_df_grouped, aes(x=num_pc, y=mean_r, color= concept))+
   geom_vline(xintercept = 8)
 
 p
-ggsave( '../plots/shufVunshuf.pdf',plot=p,device = 'pdf',width = 10,height = 7)
+ggsave( '../plots/shufVunshuf_fixed.pdf',plot=p,device = 'pdf',width = 10,height = 7)
 
 ```
 
